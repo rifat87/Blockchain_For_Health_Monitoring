@@ -1,72 +1,90 @@
-import React, { useState } from "react";
-import { submitVitals } from "../api/vitals";
+import { useState } from "react";
+import { commitVitals } from "../api/vitals";
+import type { VitalInput, VitalsResponse } from "../types.ts";
+import Loader from "./Loader.tsx";
 
 export default function VitalForm() {
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<VitalInput>({
     patientId: "",
-    heartRate: "",
-    respirationRate: "",
-    bodyTemperatureC: "",
-    spo2: "",
-    systolic: "",
-    diastolic: "",
+    name: "",
+    age: 0,
+    gender: "",
+    heartRate: 0,
+    respirationRate: 0,
+    systolic: 0,
+    diastolic: 0,
+    bodyTemperatureC: 0,
+    spo2: 0,
+    address: "",
+    phone: "",
+    doctorName: "",
   });
+
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const [result, setResult] = useState<VitalsResponse | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: name === "age" || name === "heartRate" || name === "respirationRate" ||
+              name === "systolic" || name === "diastolic" ||
+              name === "bodyTemperatureC" || name === "spo2"
+              ? Number(value)
+              : value,
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await submitVitals({
-        ...form,
-        heartRate: Number(form.heartRate),
-        respirationRate: Number(form.respirationRate),
-        bodyTemperatureC: Number(form.bodyTemperatureC),
-        spo2: Number(form.spo2),
-        systolic: Number(form.systolic),
-        diastolic: Number(form.diastolic),
-      });
-      setMessage(`✅ Stored successfully! TxHash: ${response.record.chain.txHash}`);
+      const res = await commitVitals(form);
+      setResult(res);
     } catch (err: any) {
-      setMessage("❌ Failed to submit data");
+      alert(err.response?.data?.message || "Failed to commit vitals");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-4 max-w-md mx-auto">
-      <h2 className="text-xl font-bold mb-4">Patient Vital Form</h2>
+    <div className="max-w-3xl mx-auto bg-white shadow-lg p-8 rounded-2xl">
+      <h1 className="text-2xl font-semibold mb-6">Commit Vitals to Blockchain</h1>
 
-      {Object.keys(form).map((key) => (
-        <div key={key} className="mb-3">
-          <label className="block text-sm font-medium mb-1" htmlFor={key}>{key}</label>
-          <input
-            type="text"
-            id={key}
-            name={key}
-            value={(form as any)[key]}
-            onChange={handleChange}
-            className="border rounded p-2 w-full"
-            required
-          />
+      <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+        {Object.keys(form).map((key) => (
+          <div key={key}>
+            <label className="block text-sm font-medium mb-1 capitalize">
+              {key}
+            </label>
+            <input
+              name={key}
+              value={(form as any)[key]}
+              onChange={handleChange}
+              type={typeof (form as any)[key] === "number" ? "number" : "text"}
+              required={key === "patientId" || key === "heartRate"}
+              className="border border-gray-300 rounded-md p-2 w-full"
+            />
+          </div>
+        ))}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="col-span-2 mt-4 bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
+        >
+          {loading ? <Loader /> : "Submit to Blockchain"}
+        </button>
+      </form>
+
+      {result && (
+        <div className="mt-6 bg-green-50 p-4 rounded-md border border-green-300">
+          <h3 className="font-semibold">✅ Transaction Successful</h3>
+          <p>Tx Hash: {result.txHash}</p>
+          <p>Block Number: {result.record?.chain?.blockNumber}</p>
         </div>
-      ))}
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="bg-blue-500 text-white px-4 py-2 rounded"
-      >
-        {loading ? "Submitting..." : "Submit & Store"}
-      </button>
-
-      {message && <p className="mt-4 text-sm">{message}</p>}
-    </form>
+      )}
+    </div>
   );
 }

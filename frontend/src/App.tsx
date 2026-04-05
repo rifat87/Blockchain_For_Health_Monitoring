@@ -1,16 +1,16 @@
-import VitalForm from "./components/VitalForm";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Dashboard from "./pages/Dashboard";
+import AddVitals from "./pages/AddVitals";
+import PatientDetails from "./pages/PatientDetails";
 
-function App() {
-  // return (
-  //   <div className="min-h-screen flex items-center justify-center bg-gray-100">
-  //     <VitalForm />
-  //   </div>
-  // );
+export default function App() {
   return (
-    <div className="h-screen flex items-center justify-center bg-green-500 text-white text-3xl font-bold">
-      Tailwind is working 🎉
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/add" element={<AddVitals />} />
+        <Route path="/patient" element={<PatientDetails />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
-
-export default App;

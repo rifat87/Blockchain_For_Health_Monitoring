@@ -1,28 +1,16 @@
 import axios from "axios";
+import type { VitalInput, VitalsResponse } from "../types.ts";
 
-export const api = axios.create({
-  baseURL: "/api/v1", // matches Express prefix
+const API = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000/api/v1/vitals",
 });
 
-export interface VitalPayload {
-  patientId: string;
-  heartRate: number;
-  respirationRate: number;
-  bodyTemperatureC: number;
-  spo2: number;
-  systolic: number;
-  diastolic: number;
-  age?: number;
-  gender?: string;
-  weightKg?: number;
-  heightM?: number;
-  walletAddress?: string;
-}
-
-export async function submitVitals(data: VitalPayload) {
-  const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-  const walletAddress = accounts[0];
-  const payload = { ...data, walletAddress };
-  const res = await api.post("/vitals/commit", payload);
+export const commitVitals = async (data: VitalInput): Promise<VitalsResponse> => {
+  const res = await API.post("/commit", data);
   return res.data;
-}
+};
+
+export const getVitals = async (patientId: string): Promise<VitalsResponse> => {
+  const res = await API.get(`/${patientId}`);
+  return res.data;
+};
